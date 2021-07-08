@@ -1,0 +1,12 @@
+*.swp
+*.o
+*.hi
+.ruby-version
+*~
+.#.*
+TAGS
+.bundle/
+vendor/bundle/
+Gemfile.lock
+Gemfile.local
+*.conf
