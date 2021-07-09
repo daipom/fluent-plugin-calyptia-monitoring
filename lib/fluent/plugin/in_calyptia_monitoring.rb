@@ -25,12 +25,15 @@ module Fluent
 
       helpers :timer
 
+      RPC_CONFIG_DUMP_ENDPOINT = "/api/config.getDump".freeze
+
       # desc 'The endpoint for Monitoring API HTTP request, e.g. http://example.com/api'
       # config_param :endpoint, :string
       desc 'Emit monitoring values interval'
       config_param :emit_interval, :time, default: 10
       desc 'The tag with which internal metrics are emitted.'
       config_param :tag, :string, default: nil
+      config_param :emit_config_interval, :time, default: '1h'
 
       def multi_workers_ready?
         true
@@ -45,14 +48,56 @@ module Fluent
                                          false
                                        end
         @monitor_agent = Fluent::Plugin::CalyptiaMonitoringExtInput.new(@use_cmetrics_msgpack_format)
-        timer_execute(:in_calyptia_monitoring, @emit_interval, &method(:on_timer))
+        timer_execute(:in_calyptia_monitoring_send_metrics, @emit_interval, &method(:on_timer_send_metrics))
+        # Only works for worker 0.
+        if check_config_sending_usability
+          timer_execute(:in_calyptia_monitoring_send_config, @emit_config_interval, &method(:on_timer_send_config))
+        end
+      end
+
+      def check_config_sending_usability
+        return false unless fluentd_worker_id == 0
+        unless system_config.rpc_endpoint
+          log.warn "This feature needs to enable RPC with `rpc_endpoint` on <system>."
+          return false
+        end
+
+        uri = URI.parse("http://#{system_config.rpc_endpoint}")
+        res = Net::HTTP.start(uri.host, uri.port) {|http|
+          http.get(RPC_CONFIG_DUMP_ENDPOINT)
+        }
+        if status = (res.code.to_i == 200)
+          return status
+        else
+          log.warn "This feature needs to enable getDump RPC endpoint with `enable_get_dump` on <system>."
+          return false
+        end
       end
 
       def shutdown
         super
       end
 
-      def on_timer
+      def on_timer_send_config
+        if @tag
+          log.debug "tag parameter is specified. Emit Fluentd configuration contents to '#{@tag}'"
+
+          es = Fluent::MultiEventStream.new
+          now = Fluent::EventTime.now
+
+          uri = URI.parse("http://#{system_config.rpc_endpoint}")
+          res = Net::HTTP.start(uri.host, uri.port) {|http|
+            http.get(RPC_CONFIG_DUMP_ENDPOINT)
+          }
+          if res.code.to_i == 200
+            conf = Yajl.load(res.body)["conf"]
+            es.add(now, conf)
+            router.emit_stream(@tag, es)
+          end
+        end
+      end
+
+      def on_timer_send_metrics
         if @tag
           log.debug "tag parameter is specified. Emit plugins info to '#{@tag}'"
           opts = {with_config: false, with_retry: false}
