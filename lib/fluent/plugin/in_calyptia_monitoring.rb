@@ -27,13 +27,18 @@ module Fluent
 
       RPC_CONFIG_DUMP_ENDPOINT = "/api/config.getDump".freeze
 
-      # desc 'The endpoint for Monitoring API HTTP request, e.g. http://example.com/api'
-      # config_param :endpoint, :string
-      desc 'Emit monitoring values interval'
-      config_param :emit_interval, :time, default: 10
+      config_section :cloud_monitoring, multi: false do
+        # desc 'The endpoint for Monitoring API HTTP request, e.g. http://example.com/api'
+        # config_param :endpoint, :string
+        # desc 'The API KEY for Monitoring API HTTP request
+        # config_param :api_key, :string
+        desc 'Emit monitoring values interval'
+        config_param :rate, :time, default: 10
+        desc 'Emit sending configuration interval'
+        config_param :config_rate, :time, default: '1h'
+      end
       desc 'The tag with which internal metrics are emitted.'
       config_param :tag, :string, default: nil
-      config_param :emit_config_interval, :time, default: '1h'
 
       def multi_workers_ready?
         true
@@ -48,10 +53,10 @@ module Fluent
                                          false
                                        end
         @monitor_agent = Fluent::Plugin::CalyptiaMonitoringExtInput.new(@use_cmetrics_msgpack_format)
-        timer_execute(:in_calyptia_monitoring_send_metrics, @emit_interval, &method(:on_timer_send_metrics))
+        timer_execute(:in_calyptia_monitoring_send_metrics, @cloud_monitoring.rate, &method(:on_timer_send_metrics))
         # Only works for worker 0.
         if check_config_sending_usability
-          timer_execute(:in_calyptia_monitoring_send_config, @emit_config_interval, &method(:on_timer_send_config))
+          timer_execute(:in_calyptia_monitoring_send_config, @cloud_monitoring.config_rate, &method(:on_timer_send_config))
         end
       end
 
