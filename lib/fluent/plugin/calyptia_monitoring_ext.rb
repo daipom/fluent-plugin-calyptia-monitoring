@@ -46,18 +46,39 @@ module Fluent::Plugin
       },
     }
 
-    def get_monitor_info(pe, opts = {})
-      obj = {
-        'plugin_id'.freeze => pe.plugin_id,
-        'type'.freeze => pe.config['@type'.freeze] || pe.config['type'.freeze],
-        'plugin_category'.freeze => plugin_category(pe),
-        'worker_id'.freeze => pe.fluentd_worker_id,
+    def metric_template(pe, key, value)
+      name = if pe.plugin_id_configured?
+               "#{pe.plugin_id}"
+             else
+               "#{pe.config['@type'.freeze] || pe.config['type'.freeze]}_#{self.plugin_id}"
+             end
+      type = pe.config['@type'.freeze] || pe.config['type'.freeze]
+      return {
+        "type" => 0,
+        "opts" => {
+          "namespace" => plugin_category(pe),
+          "subsystem" => type,
+          "name" => key,
+          "fqname" => "#{plugin_category(pe)}.#{name}.#{key}",
+        },
+        "labels" => [],
+        "values" => [
+          "ts" => (Time.now.to_f * 10**9).to_i,
+          "value" => value,
+          "labels" => []
+        ]
       }
+    end
+
+    def get_monitor_info(pe, opts = {})
+      obj = {}
 
       if @use_cmetrics_msgpack_format
         obj['metrics'] = get_plugin_metric(pe)
       else
-        obj.merge!(get_plugin_metric(pe))
+        get_plugin_metric(pe).each do |k, v|
+          obj.merge!(metric_template(pe, k, v))
+        end
       end
 
       obj

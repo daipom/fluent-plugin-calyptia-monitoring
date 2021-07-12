@@ -118,9 +118,13 @@ module Fluent
             }
             es.add(now, buffer)
           else
-            @monitor_agent.plugins_info_all(opts).each { |record|
-              es.add(now, record)
+            metrics = {
+              "metrics" => [],
             }
+            @monitor_agent.plugins_info_all(opts).each { |metric|
+              metrics["metrics"] << metric
+            }
+            es.add(now, metrics)
           end
           router.emit_stream(@tag, es)
         end
