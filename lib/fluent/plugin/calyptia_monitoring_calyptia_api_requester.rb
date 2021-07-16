@@ -24,10 +24,11 @@ module Fluent::Plugin
     class Requester
       include Fluent::SystemConfig::Mixin
 
-      def initialize(endpoint, api_key, log)
+      def initialize(endpoint, api_key, log, worker_id)
         @endpoint = endpoint
         @api_key = api_key
         @log = log
+        @worker_id = worker_id
       end
 
       def proxies
@@ -43,7 +44,7 @@ module Fluent::Plugin
           "edition" => "community".freeze,
         }
         if system_config.workers.to_i > 1
-          metadata["flags"] = ["number_of_workers=#{system_config.workers}"]
+          metadata["flags"] = ["number_of_workers=#{system_config.workers}", "worker_id=#{@worker_id}"]
         end
         metadata
       end

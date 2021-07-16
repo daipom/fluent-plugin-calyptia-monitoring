@@ -76,7 +76,8 @@ module Fluent
         @monitor_agent = Fluent::Plugin::CalyptiaMonitoringExtInput.new
         @api_requester = Fluent::Plugin::CalyptiaAPI::Requester.new(@cloud_monitoring.endpoint,
                                                                     @cloud_monitoring.api_key,
-                                                                    log)
+                                                                    log,
+                                                                    fluentd_worker_id)
         if check_config_sending_usability
           @current_config = get_current_config_from_rpc
         end
