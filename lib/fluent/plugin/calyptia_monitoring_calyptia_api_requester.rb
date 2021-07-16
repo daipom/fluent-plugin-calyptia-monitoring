@@ -18,6 +18,7 @@ require 'securerandom'
 require 'socket'
 require 'yajl'
 require 'fluent/system_config'
+require_relative 'calyptia_monitoring_machine_id'
 
 module Fluent::Plugin
   class CalyptiaAPI
@@ -29,6 +30,7 @@ module Fluent::Plugin
         @api_key = api_key
         @log = log
         @worker_id = worker_id
+        @machine_id = Fluent::Plugin::CalyptiaMonitoringMachineId.new(worker_id, log)
       end
 
       def proxies
@@ -62,7 +64,7 @@ module Fluent::Plugin
                   Net::HTTP.new(url.host, url.port)
                 end
         https.use_ssl = (url.scheme == "https")
-        machine_id = SecureRandom.uuid
+        machine_id = @machine_id.id
         @log.debug "send creating agent request"
         request = Net::HTTP::Post.new(url)
         request["X-Project-Token"] = @api_key
