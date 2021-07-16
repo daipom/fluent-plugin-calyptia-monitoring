@@ -6,8 +6,8 @@ class CalyptiaMonitoringInputTest < Test::Unit::TestCase
     Fluent::Test.setup
   end
 
-  test "failure" do
-    flunk
+  test "operate" do
+    omit "Not implemented for now"
   end
 
   private
