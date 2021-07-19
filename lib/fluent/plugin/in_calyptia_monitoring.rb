@@ -14,6 +14,7 @@
 # limitations under the License.
 
 require 'net/http'
+require 'monitor'
 require 'time'
 require 'fluent/version'
 require 'fluent/plugin/metrics'
@@ -30,6 +31,7 @@ module Fluent
 
       RPC_CONFIG_DUMP_ENDPOINT = "/api/config.getDump".freeze
       DEFAULT_STORAGE_TYPE = 'local'
+      DEFAULT_PENDING_METRICS_SIZE = 100
 
       config_section :cloud_monitoring, multi: false do
         desc 'The endpoint for Monitoring API HTTP request, e.g. http://example.com/api'
@@ -38,6 +40,8 @@ module Fluent
         config_param :api_key, :string, secret: true
         desc 'Emit monitoring values interval'
         config_param :rate, :time, default: 10
+        desc 'Setup pending metrics capacity size'
+        config_param :pending_metrics_size, :size, default: DEFAULT_PENDING_METRICS_SIZE
       end
 
       def multi_workers_ready?
@@ -48,6 +52,8 @@ module Fluent
         super
         @agent_id = nil
         @current_config = nil
+        @monitor = Monitor.new
+        @pending = []
       end
 
       def configure(conf)
@@ -137,6 +143,42 @@ module Fluent
         super
       end
 
+      def add_metrics(buffer)
+        return false unless agent = @storage_agent.get(:agent)
+
+        begin
+          code, response = if @pending.empty?
+                             @api_requester.add_metrics(buffer, agent["token"], agent["id"])
+                           else
+                             @monitor.synchronize do
+                               @pending = @pending.concat([buffer])
+                               @api_requester.add_metrics(@pending.join, agent["token"], agent["id"])
+                               @pending = []
+                             end
+                           end
+          unless response["error"].nil?
+            log.warn "Sending metrics is failed. Error: `#{response["error"]}', Code: #{code}"
+            return false
+          end
+        rescue => ex
+          log.warn "Failed to send metrics: error = #{ex}"
+          @monitor.synchronize do
+            if @pending.empty?
+              @pending = [buffer]
+            elsif @pending.size >= DEFAULT_PENDING_METRICS_SIZE
+              drop_count = 1
+              @pending = @pending.drop(drop_count)
+              log.warn "pending buffer is full. Dropped the first element from the pending buffer"
+              @pending.concat([buffer])
+            else
+              @pending.concat([buffer])
+            end
+          end
+          return false
+        end
+        return true
+      end
+
       def on_timer_send_metrics
         opts = {with_config: false, with_retry: false}
         buffer = ""
@@ -146,11 +188,8 @@ module Fluent
             buffer += v
           end
         }
-        if agent = @storage_agent.get(:agent)
-          code, response = @api_requester.add_metrics(buffer, agent["token"], agent["id"])
-          unless response["error"].nil?
-            log.warn "Sending metrics is failed. Error: `#{response["error"]}', Code: #{code}"
-          end
+        unless add_metrics(buffer)
+          log.warn "Sending metrics is failed. Trying to send pending buffers in the next interval: #{@cloud_monitoring.rate}"
         end
       end
     end
