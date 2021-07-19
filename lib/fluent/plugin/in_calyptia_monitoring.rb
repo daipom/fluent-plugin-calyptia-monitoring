@@ -32,6 +32,12 @@ module Fluent
       RPC_CONFIG_DUMP_ENDPOINT = "/api/config.getDump".freeze
       DEFAULT_STORAGE_TYPE = 'local'
       DEFAULT_PENDING_METRICS_SIZE = 100
+      UNPROCESSABLE_HTTP_ERRORS = [
+        422, # Invalid Metrics
+        410, # Agent Gone
+        401, # Unauthorized
+        400, # BadRequest
+      ]
 
       config_section :cloud_monitoring, multi: false do
         desc 'The endpoint for Monitoring API HTTP request, e.g. http://example.com/api'
@@ -143,6 +149,21 @@ module Fluent
         super
       end
 
+      def append_pendings(buffer)
+        @monitor.synchronize do
+          if @pending.empty?
+            @pending = [buffer]
+          elsif @pending.size >= DEFAULT_PENDING_METRICS_SIZE
+            drop_count = 1
+            @pending = @pending.drop(drop_count)
+            log.warn "pending buffer is full. Dropped the first element from the pending buffer"
+            @pending.concat([buffer])
+          else
+            @pending.concat([buffer])
+          end
+        end
+      end
+
       def add_metrics(buffer)
         return false unless agent = @storage_agent.get(:agent)
 
@@ -157,23 +178,18 @@ module Fluent
                              end
                            end
           unless response["error"].nil?
-            log.warn "Sending metrics is failed. Error: `#{response["error"]}', Code: #{code}"
+            case code.to_i
+            when *UNPROCESSABLE_HTTP_ERRORS
+              log.warn "Sending metrics is failed and dropped metrics due to unprocessable on server. Error: `#{response["error"]}', Code: #{code}"
+              return false
+            end
+          log.warn "Failed to send metrics. Error: `#{response["error"]}', Code: #{code}"
+            append_pendings(buffer)
             return false
           end
         rescue => ex
           log.warn "Failed to send metrics: error = #{ex}"
-          @monitor.synchronize do
-            if @pending.empty?
-              @pending = [buffer]
-            elsif @pending.size >= DEFAULT_PENDING_METRICS_SIZE
-              drop_count = 1
-              @pending = @pending.drop(drop_count)
-              log.warn "pending buffer is full. Dropped the first element from the pending buffer"
-              @pending.concat([buffer])
-            else
-              @pending.concat([buffer])
-            end
-          end
+          append_pendings(buffer)
           return false
         end
         return true
