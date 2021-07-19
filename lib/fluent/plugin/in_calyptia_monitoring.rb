@@ -177,18 +177,18 @@ module Fluent
                                @pending = []
                              end
                            end
-          unless response["error"].nil?
+          if response && response["error"]
             case code.to_i
             when *UNPROCESSABLE_HTTP_ERRORS
               log.warn "Sending metrics is failed and dropped metrics due to unprocessable on server. Error: `#{response["error"]}', Code: #{code}"
               return false
             end
-          log.warn "Failed to send metrics. Error: `#{response["error"]}', Code: #{code}"
+            log.warn "Failed to send metrics. Error: `#{response["error"]}', Code: #{code}"
             append_pendings(buffer)
             return false
           end
         rescue => ex
-          log.warn "Failed to send metrics: error = #{ex}"
+          log.warn "Failed to send metrics: error = #{ex}, #{ex.backtrace.join('\n')}"
           append_pendings(buffer)
           return false
         end
