@@ -188,7 +188,7 @@ module Fluent
             return false
           end
         rescue => ex
-          log.warn "Failed to send metrics: error = #{ex}, #{ex.backtrace.join('\n')}"
+          log.warn "Failed to send metrics: error = #{ex}, backtrace = #{ex.backtrace}"
           append_pendings(buffer)
           return false
         end
@@ -205,7 +205,7 @@ module Fluent
           end
         }
         unless add_metrics(buffer)
-          log.warn "Sending metrics is failed. Trying to send pending buffers in the next interval: #{@cloud_monitoring.rate}"
+          log.warn "Sending metrics is failed. Trying to send pending buffers in the next interval: #{@cloud_monitoring.rate}, next sending time: #{Time.now + @cloud_monitoring.rate}"
         end
       end
     end
