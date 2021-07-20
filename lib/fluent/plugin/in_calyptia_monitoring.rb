@@ -96,6 +96,8 @@ module Fluent
 
         if setup_agent(@current_config)
           timer_execute(:in_calyptia_monitoring_send_metrics, @cloud_monitoring.rate, &method(:on_timer_send_metrics))
+        else
+          log.warn "Setup agent is failed. Something went wrong"
         end
       end
 
@@ -115,8 +117,13 @@ module Fluent
           unless machine_id = @storage_agent.get(:machine_id)
             return create_agent(current_config)
           end
-          @api_requester.update_agent(current_config, agent["id"], machine_id)
-          return true
+          code, body = @api_requester.update_agent(current_config, agent, machine_id)
+          if code.to_s.start_with?("2")
+            return true
+          else
+            log.warn "Updating agent is failed. Error: #{Yajl.load(body)["error"]}, Code: #{code}"
+            return false
+          end
         else
           create_agent(current_config)
         end

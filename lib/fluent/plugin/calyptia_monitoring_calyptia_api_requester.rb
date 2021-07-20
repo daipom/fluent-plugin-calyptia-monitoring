@@ -76,9 +76,9 @@ module Fluent::Plugin
       end
 
       # PATCH /api/v1/agents/:agent_id
-      # Authorization: X-Project-Token
-      def update_agent(current_config, agent_id, machine_id)
-        url = URI("#{@endpoint}/api/v1/agents/#{agent_id}")
+      # Authorization: X-Agent-Token
+      def update_agent(current_config, agent, machine_id)
+        url = URI("#{@endpoint}/api/v1/agents/#{agent['id']}")
 
         https = if proxy = proxies
                   proxy_uri = URI.parse(proxy)
@@ -91,13 +91,13 @@ module Fluent::Plugin
 
         @log.debug "send updating agent request"
         request = Net::HTTP::Patch.new(url)
-        request["X-Project-Token"] = @api_key
+        request["X-Agent-Token"] = agent['token']
         request["Content-Type"] = "application/json"
 
         request.body = Yajl.dump(agent_metadata(current_config).merge("machineID" => machine_id))
         response = https.request(request)
-        agent = Yajl.load(response.read_body)
-        agent
+        body = response.read_body
+        return [response.code, body]
       end
 
       # POST /api/v1/agents/:agent_id/metrics
