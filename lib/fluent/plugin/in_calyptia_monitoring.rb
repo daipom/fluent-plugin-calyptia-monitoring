@@ -17,6 +17,7 @@ require 'net/http'
 require 'monitor'
 require 'time'
 require 'fluent/version'
+require 'fluent/config/element'
 require 'fluent/plugin/metrics'
 require "fluent/plugin/input"
 require_relative "calyptia_monitoring_ext"
@@ -69,11 +70,15 @@ module Fluent
       end
 
       def get_current_config_from_rpc
-        uri = URI.parse("http://#{system_config.rpc_endpoint}")
-        res = Net::HTTP.start(uri.host, uri.port) {|http|
-          http.get(RPC_CONFIG_DUMP_ENDPOINT)
+        res = retrieve_config_from_rpc
+        config = Yajl.load(res.body)["conf"]
+        conf = Fluent::Config.parse(config, '(supervisor)', '(RPC)', true)
+        confs = []
+        conf.elements.select{|e| e.name == 'ROOT' }.first.elements.each{|e|
+          confs << e.to_s
         }
-        Yajl.load(res.body)["conf"]
+        # Remove outer <ROOT> element
+        confs.join
       end
 
       def start
@@ -135,7 +140,7 @@ module Fluent
           return false
         end
 
-        res = retrive_config_from_rpc
+        res = retrieve_config_from_rpc
         if status = (res.code.to_i == 200)
           return status
         else
@@ -144,7 +149,7 @@ module Fluent
         end
       end
 
-      def retrive_config_from_rpc
+      def retrieve_config_from_rpc
         uri = URI.parse("http://#{system_config.rpc_endpoint}")
         res = Net::HTTP.start(uri.host, uri.port) {|http|
           http.get(RPC_CONFIG_DUMP_ENDPOINT)
