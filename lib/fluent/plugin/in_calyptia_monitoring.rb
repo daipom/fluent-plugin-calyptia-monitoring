@@ -45,7 +45,7 @@ module Fluent
         config_param :endpoint, :string, default: "https://cloud-monitoring-api-dev.fluentbit.io"
         desc 'The API KEY for Monitoring API HTTP request'
         config_param :api_key, :string, secret: true
-        desc 'Emit monitoring values interval'
+        desc 'Emit monitoring values interval. (minimum interval is 30 seconds.)'
         config_param :rate, :time, default: 30
         desc 'Setup pending metrics capacity size'
         config_param :pending_metrics_size, :size, default: DEFAULT_PENDING_METRICS_SIZE
@@ -99,6 +99,10 @@ module Fluent
           @current_config = get_current_config_from_rpc
         end
 
+        if @cloud_monitoring.rate < 30
+          log.warn "High frequency events ingestion is not supported. Set up 30s as ingestion interval"
+          @cloud_monitoring[:rate] = 30
+        end
         if setup_agent(@current_config)
           timer_execute(:in_calyptia_monitoring_send_metrics, @cloud_monitoring.rate, &method(:on_timer_send_metrics))
         else
