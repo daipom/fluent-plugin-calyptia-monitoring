@@ -28,6 +28,9 @@ module Fluent
     class CalyptiaMonitoringInput < Fluent::Plugin::Input
       Fluent::Plugin.register_input("calyptia_monitoring", self)
 
+      class CreateAgentError < Fluent::ConfigError; end
+      class UpdateAgentError < Fluent::ConfigError; end
+
       helpers :timer, :storage
 
       RPC_CONFIG_DUMP_ENDPOINT = "/api/config.getDump".freeze
@@ -106,7 +109,7 @@ module Fluent
         if setup_agent(@current_config)
           timer_execute(:in_calyptia_monitoring_send_metrics, @cloud_monitoring.rate, &method(:on_timer_send_metrics))
         else
-          log.warn "Setup agent is failed. Something went wrong"
+          raise UpdateAgentError, "Setup agent is failed. Something went wrong"
         end
       end
 
@@ -117,7 +120,7 @@ module Fluent
           @storage_agent.put(:machine_id, machine_id)
           return true
         else
-          raise RuntimeError, "Create agent is failed. Error: `#{agent["error"]}', code: #{code}"
+          raise CreateAgentError, "Create agent is failed. Error: `#{agent["error"]}', code: #{code}"
         end
       end
 
