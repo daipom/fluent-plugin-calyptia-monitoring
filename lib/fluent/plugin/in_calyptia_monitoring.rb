@@ -46,7 +46,7 @@ module Fluent
         desc 'The API KEY for Monitoring API HTTP request'
         config_param :api_key, :string, secret: true
         desc 'Emit monitoring values interval'
-        config_param :rate, :time, default: 10
+        config_param :rate, :time, default: 30
         desc 'Setup pending metrics capacity size'
         config_param :pending_metrics_size, :size, default: DEFAULT_PENDING_METRICS_SIZE
       end
