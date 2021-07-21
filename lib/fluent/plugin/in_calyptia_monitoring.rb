@@ -60,7 +60,6 @@ module Fluent
 
       def initialize
         super
-        @agent_id = nil
         @current_config = nil
         @monitor = Monitor.new
         @pending = []
