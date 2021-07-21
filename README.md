@@ -49,7 +49,7 @@ $ bundle
 
 This plugin works well with [cmetrics Fluentd extension for metrics plugin](https://github.com/calyptia/fluent-plugin-metrics-cmetrics).
 
-And enabling RPC and configDump endpoint is requireed if sending Fluentd configuration:
+And enabling RPC and configDump endpoint is required if sending Fluentd configuration:
 
 ```aconf
 <system>
