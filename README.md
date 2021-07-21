@@ -34,7 +34,7 @@ $ bundle
 ## Fluent::Plugin::CalyptiaMonitoringInput
 
 
-### \<cloud_monitoring\> section (optional) (single)
+### \<cloud_monitoring\> section (required) (single)
 
 ### Configuration
 

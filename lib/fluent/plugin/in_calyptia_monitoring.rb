@@ -43,7 +43,7 @@ module Fluent
         400, # BadRequest
       ]
 
-      config_section :cloud_monitoring, multi: false do
+      config_section :cloud_monitoring, multi: false, required: true do
         desc 'The endpoint for Monitoring API HTTP request, e.g. http://example.com/api'
         config_param :endpoint, :string, default: "https://cloud-monitoring-api-dev.fluentbit.io"
         desc 'The API KEY for Monitoring API HTTP request'
