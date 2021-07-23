@@ -222,8 +222,12 @@ module Fluent
             buffer += v
           end
         }
-        unless add_metrics(buffer)
-          log.warn "Sending metrics is failed. Trying to send pending buffers in the next interval: #{@cloud_monitoring.rate}, next sending time: #{Time.now + @cloud_monitoring.rate}"
+        if buffer.empty?
+          log.debug "No initialized metrics is found. Trying to send cmetrics on the next tick."
+        else
+          unless add_metrics(buffer)
+            log.warn "Sending metrics is failed. Trying to send pending buffers in the next interval: #{@cloud_monitoring.rate}, next sending time: #{Time.now + @cloud_monitoring.rate}"
+          end
         end
       end
     end

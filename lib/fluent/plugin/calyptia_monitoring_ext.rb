@@ -19,9 +19,11 @@ module Fluent::Plugin
   class CalyptiaMonitoringExtInput < MonitorAgentInput
     CALYPTIA_PLUGIN_METRIC_INFO = {
       'emit_size' => ->(){
+        throw(:skip) if @emit_size_metrics.get(self.plugin_id).nil?
         @emit_size_metrics.cmetrics.to_msgpack
       },
       'emit_records' => ->(){
+        throw(:skip) if @emit_records_metrics.get(self.plugin_id).nil?
         @emit_records_metrics.cmetrics.to_msgpack
       },
       'retry_count' => ->(){
