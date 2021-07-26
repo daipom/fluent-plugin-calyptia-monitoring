@@ -53,7 +53,7 @@ module Fluent::Plugin
       require 'open3'
       o,_e, s = Open3.capture3 %q(ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}')
       unless s.success?
-        @log.warn "MachineID is not retrived from ioreg. Using UUID instead."
+        @log.info "MachineID is not retrived from ioreg. Using UUID instead."
         "#{SecureRandom.uuid}:#{@worker_id}"
       else
         # TODO: The prefix should be removed?
@@ -69,7 +69,7 @@ module Fluent::Plugin
         machine_id = File.read(ETC_MACHINE_ID_PATH).strip rescue ""
       end
       if machine_id.empty?
-        @log.warn "MachineID is not retrived from #{DBUS_MACHINE_ID_PATH} or #{ETC_MACHINE_ID_PATH}. Using UUID instead."
+        @log.info "MachineID is not retrived from #{DBUS_MACHINE_ID_PATH} or #{ETC_MACHINE_ID_PATH}. Using UUID instead."
         "#{SecureRandom.uuid}:#{@worker_id}"
       else
         # TODO: The prefix should be removed?
@@ -85,7 +85,7 @@ module Fluent::Plugin
         machine_id = key.read("MachineGuid")[1] rescue ""
       end
       if machine_id.empty?
-        @log.warn "MachineID is not retrived from Registry. Using UUID instead."
+        @log.info "MachineID is not retrived from Registry. Using UUID instead."
         "#{SecureRandom.uuid}:#{@worker_id}"
       else
         # TODO: The prefix should be removed?
