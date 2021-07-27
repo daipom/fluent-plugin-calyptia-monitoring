@@ -3,7 +3,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name    = "fluent-plugin-calyptia-monitoring"
-  spec.version = "0.1.0.rc2"
+  spec.version = "0.1.0.rc3"
   spec.authors = ["Hiroshi Hatake"]
   spec.email   = ["hatake@calyptia.com"]
 
