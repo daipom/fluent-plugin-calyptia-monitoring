@@ -65,7 +65,7 @@ module Fluent::Plugin
       machine_id = ""
       begin
         machine_id = File.read(DBUS_MACHINE_ID_PATH).strip
-      rescue Errno::NOENT
+      rescue Errno::ENOENT
         machine_id = File.read(ETC_MACHINE_ID_PATH).strip rescue ""
       end
       if machine_id.empty?
