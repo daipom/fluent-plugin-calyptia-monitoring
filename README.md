@@ -56,6 +56,9 @@ And enabling RPC and configDump endpoint is required if sending Fluentd configur
 # If users want to use multi workers feature which corresponds to logical number of CPUs, please comment out this line.
 #  workers "#{require 'etc'; Etc.nprocessors}"
   enable_input_metrics true
+  # This record size measuring settings might impact for performance.
+  # Please be careful for high loaded environment to turn on.
+  enable_size_metrics true
   <metrics>
     @type cmetrics
   </metrics>
