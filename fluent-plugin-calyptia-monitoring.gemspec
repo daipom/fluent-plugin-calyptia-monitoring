@@ -3,7 +3,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name    = "fluent-plugin-calyptia-monitoring"
-  spec.version = "0.1.0.rc3"
+  spec.version = "0.1.0.rc4"
   spec.authors = ["Hiroshi Hatake"]
   spec.email   = ["hatake@calyptia.com"]
 
@@ -24,5 +24,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "test-unit", "~> 3.3"
   spec.add_runtime_dependency "fluentd", [">= 1.13.0", "< 2"]
-  spec.add_runtime_dependency "fluent-plugin-metrics-cmetrics", ">= 0.1.0.rc2"
+  spec.add_runtime_dependency "fluent-plugin-metrics-cmetrics", ">= 0.1.0.rc3"
 end
