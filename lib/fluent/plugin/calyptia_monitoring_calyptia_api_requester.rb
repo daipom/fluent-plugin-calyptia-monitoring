@@ -51,10 +51,10 @@ module Fluent::Plugin
         metadata
       end
 
-      # POST /api/v1/agents
+      # POST /v1/agents
       # Authorization: X-Project-Token
       def create_agent(current_config)
-        url = URI("#{@endpoint}/api/v1/agents")
+        url = URI("#{@endpoint}/v1/agents")
 
         https = if proxy = proxies
                   proxy_uri = URI.parse(proxy)
@@ -75,10 +75,10 @@ module Fluent::Plugin
         return [response.code, agent, machine_id]
       end
 
-      # PATCH /api/v1/agents/:agent_id
+      # PATCH /v1/agents/:agent_id
       # Authorization: X-Agent-Token
       def update_agent(current_config, agent, machine_id)
-        url = URI("#{@endpoint}/api/v1/agents/#{agent['id']}")
+        url = URI("#{@endpoint}/v1/agents/#{agent['id']}")
 
         https = if proxy = proxies
                   proxy_uri = URI.parse(proxy)
@@ -100,10 +100,10 @@ module Fluent::Plugin
         return [response.code, body]
       end
 
-      # POST /api/v1/agents/:agent_id/metrics
+      # POST /v1/agents/:agent_id/metrics
       # Authorization: X-Agent-Token
       def add_metrics(metrics, agent_token, agent_id)
-        url = URI("#{@endpoint}/api/v1/agents/#{agent_id}/metrics")
+        url = URI("#{@endpoint}/v1/agents/#{agent_id}/metrics")
 
         https = if proxy = proxies
                   proxy_uri = URI.parse(proxy)
