@@ -45,7 +45,7 @@ module Fluent
 
       config_section :cloud_monitoring, multi: false, required: true do
         desc 'The endpoint for Monitoring API HTTP request, e.g. http://example.com/api'
-        config_param :endpoint, :string, default: "https://cloud-monitoring-api-dev.fluentbit.io"
+        config_param :endpoint, :string, default: "https://cloud-api.calyptia.com"
         desc 'The API KEY for Monitoring API HTTP request'
         config_param :api_key, :string, secret: true
         desc 'Emit monitoring values interval. (minimum interval is 30 seconds.)'
