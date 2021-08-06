@@ -17,6 +17,8 @@ require 'net/http'
 require 'monitor'
 require 'time'
 require 'fluent/version'
+require 'fluent/env'
+require 'fluent/system_config'
 require 'fluent/config/element'
 require 'fluent/plugin/metrics'
 require "fluent/plugin/input"
@@ -52,6 +54,8 @@ module Fluent
         config_param :rate, :time, default: 30
         desc 'Setup pending metrics capacity size'
         config_param :pending_metrics_size, :size, default: DEFAULT_PENDING_METRICS_SIZE
+        desc 'Specify Fluentd config file path for RPC not to be available case'
+        config_param :fluentd_conf_path, :string, default: nil
       end
 
       def multi_workers_ready?
@@ -67,6 +71,10 @@ module Fluent
 
       def configure(conf)
         super
+
+        if !@cloud_monitoring.fluentd_conf_path.nil? && Fluent.windows?
+          raise Fluent::ConfigError, "retrieving from conf file is not supported on Windows. Use RPC version instead"
+        end
         config = conf.elements.select{|e| e.name == 'storage' }.first
         @storage_agent = storage_create(usage: 'calyptia_monitoring_agent', conf: config, default_type: DEFAULT_STORAGE_TYPE)
       end
@@ -83,6 +91,56 @@ module Fluent
         confs.join
       end
 
+      def get_masked_conf_from_conf_file
+        return "" unless File.exist?(@cloud_monitoring.fluentd_conf_path) # check file existence.
+
+        conf = ""
+
+        read_pipe, write_pipe = IO.pipe
+        # To obtain masked configuration files and prevent plugin instances pollution,
+        # we should use fork here.
+        pid = fork do
+          read_pipe.close
+
+          File.open(@cloud_monitoring.fluentd_conf_path, "r") do |f|
+            config = Fluent::Config.parse(f.read, '(supervisor)', '(readFromFile)', true)
+            system_config = Fluent::SystemConfig.create(config)
+            # Forcibly to load Fluentd configuration
+            # Do not execute #init here.
+            # This is because this operation should be once in the Fluentd processes.
+            Fluent::VariableStore.try_to_reset do
+              Fluent::Engine.run_configure(config, dry_run: true)
+            end
+            confs = []
+            masked_element = config.to_masked_element
+            masked_element.elements.each{|e|
+              confs << e.to_s
+            }
+            conf = confs.join
+            write_pipe.write(conf)
+            write_pipe.close
+          end
+        end
+        unless pid.nil?
+          sleep 1
+
+          write_pipe.close
+
+          begin
+            while true
+              conf += read_pipe.read_nonblock(8192)
+              sleep 1
+            end
+          rescue EOFError => e
+          end
+
+          read_pipe.close
+
+          paid,status = Process.wait2(pid)
+        end
+        conf
+      end
+
       def start
         super
 
@@ -97,9 +155,11 @@ module Fluent
                                                                     @cloud_monitoring.api_key,
                                                                     log,
                                                                     fluentd_worker_id)
-        if check_config_sending_usability
-          @current_config = get_current_config_from_rpc
-        end
+        @current_config = if !@cloud_monitoring.fluentd_conf_path.nil?
+                            get_masked_conf_from_conf_file
+                          elsif check_config_sending_usability
+                            get_current_config_from_rpc
+                          end
 
         if @cloud_monitoring.rate < 30
           log.warn "High frequency events ingestion is not supported. Set up 30s as ingestion interval"
