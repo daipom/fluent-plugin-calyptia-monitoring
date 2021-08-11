@@ -84,6 +84,28 @@ And enabling RPC and configDump endpoint is required if sending Fluentd configur
 </source>
 ```
 
+## Calyptia Monitoring API config generator
+
+Usage:
+
+```
+Usage: calyptia-config-generator api_key [options]
+
+Output plugin config definitions
+
+Arguments:
+	api_key: Specify your API_KEY
+
+Options:
+        --endpoint URL               API Endpoint URL (default: nil, and if omitted, using default endpoint)
+        --rpc-endpoint URL           Specify RPC Endpoint URL (default: 127.0.0.1:24444)
+        --disable-input-metrics      Disable Input plugin metrics. Input metrics is enabled by default
+        --enable-size-metrics        Enable event size metrics. Size metrics is disabled by default.
+        --disable-get-dump           Disable RPC getDump procedure. getDump is enabled by default.
+        --storage-agent-token-dir DIR
+                                     Specify accesible storage token dir. (default: /path/to/accesible/dir)
+```
+
 ## Copyright
 
 * Copyright(c) 2021- Hiroshi Hatake
