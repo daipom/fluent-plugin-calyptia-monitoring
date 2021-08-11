@@ -114,7 +114,7 @@ module Fluent
 
       def create_agent(current_config)
         code, agent, machine_id = @api_requester.create_agent(current_config)
-        if agent["error"].nil?
+        if code.to_s.start_with?("2")
           @storage_agent.put(:agent, agent)
           @storage_agent.put(:machine_id, machine_id)
           return true
