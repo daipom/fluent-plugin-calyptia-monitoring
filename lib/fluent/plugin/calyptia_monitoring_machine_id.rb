@@ -56,8 +56,7 @@ module Fluent::Plugin
         @log.info "MachineID is not retrived from ioreg. Using UUID instead."
         "#{SecureRandom.uuid}:#{@worker_id}"
       else
-        # TODO: The prefix should be removed?
-        "#{SecureRandom.hex(10)}_#{o.strip}:#{@worker_id}"
+        "#{o.strip}:#{@worker_id}"
       end
     end
 
@@ -72,8 +71,7 @@ module Fluent::Plugin
         @log.info "MachineID is not retrived from #{DBUS_MACHINE_ID_PATH} or #{ETC_MACHINE_ID_PATH}. Using UUID instead."
         "#{SecureRandom.uuid}:#{@worker_id}"
       else
-        # TODO: The prefix should be removed?
-        "#{SecureRandom.hex(10)}_#{machine_id}:#{@worker_id}"
+        "#{machine_id}:#{@worker_id}"
       end
     end
 
@@ -88,8 +86,7 @@ module Fluent::Plugin
         @log.info "MachineID is not retrived from Registry. Using UUID instead."
         "#{SecureRandom.uuid}:#{@worker_id}"
       else
-        # TODO: The prefix should be removed?
-        "#{SecureRandom.hex(10)}_#{machine_id}:#{@worker_id}"
+        "#{machine_id}:#{@worker_id}"
       end
     end
   end
