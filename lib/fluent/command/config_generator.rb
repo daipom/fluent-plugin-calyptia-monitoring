@@ -110,6 +110,12 @@ BANNER
 
     raise "Must specify api_key" unless @argv.size == 1
 
+    host, port = @rpc_endpoint.split(':')
+    if @enable_get_dump && (!host || !port)
+      puts "Error: invalid rpc_endpoint format. Specify `host:port' form."
+      exit(false)
+    end
+
     @api_key, = @argv
     @options = {
       api_key: @api_key,
