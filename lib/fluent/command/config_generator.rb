@@ -71,7 +71,7 @@ class CalyptiaConfigGenerator
     @parser.banner = <<BANNER
 Usage: #{$0} api_key [options]
 
-Output plugin config definitions
+Generate Calyptia monitoring plugin config definitions
 
 Arguments:
 \tapi_key: Specify your API_KEY
