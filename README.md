@@ -91,7 +91,7 @@ Usage:
 ```
 Usage: calyptia-config-generator api_key [options]
 
-Output plugin config definitions
+Generate Calyptia monitoring plugin config definitions
 
 Arguments:
 	api_key: Specify your API_KEY
