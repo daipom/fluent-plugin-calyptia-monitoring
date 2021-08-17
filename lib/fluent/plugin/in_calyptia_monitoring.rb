@@ -33,7 +33,7 @@ module Fluent
       class CreateAgentError < Fluent::ConfigError; end
       class UpdateAgentError < Fluent::ConfigError; end
 
-      helpers :timer, :storage
+      helpers :timer, :storage, :child_process
 
       RPC_CONFIG_DUMP_ENDPOINT = "/api/config.getDump".freeze
       DEFAULT_STORAGE_TYPE = 'local'
@@ -95,48 +95,23 @@ module Fluent
         return "" unless File.exist?(@cloud_monitoring.fluentd_conf_path) # check file existence.
 
         conf = ""
-
-        read_pipe, write_pipe = IO.pipe
-        # To obtain masked configuration files and prevent plugin instances pollution,
-        # we should use fork here.
-        pid = fork do
-          read_pipe.close
-
-          File.open(@cloud_monitoring.fluentd_conf_path, "r") do |f|
-            config = Fluent::Config.parse(f.read, '(supervisor)', '(readFromFile)', true)
-            system_config = Fluent::SystemConfig.create(config)
-            # Forcibly to load Fluentd configuration
-            # Do not execute #init here.
-            # This is because this operation should be once in the Fluentd processes.
-            Fluent::VariableStore.try_to_reset do
-              Fluent::Engine.run_configure(config, dry_run: true)
-            end
-            confs = []
-            masked_element = config.to_masked_element
-            masked_element.elements.each{|e|
-              confs << e.to_s
-            }
-            conf = confs.join
-            write_pipe.write(conf)
-            write_pipe.close
+        callback = ->(status) {
+          if status && status.success?
+            #nop
+          elsif status
+            log.warn "config dumper exits with error code", prog: prog, status: status.exitstatus, signal: status.termsig
+          else
+            log.warn "config dumper unexpectedly exits without exit status", prog: prog
           end
+        }
+        retval = child_process_execute(:exec_calyptia_config_dumper, File.join(__dir__, "calyptia_config_dumper.rb"), immediate: true,
+                                       env: {"FLUENT_CONFIG_PATH" => @cloud_monitoring.fluentd_conf_path}, parallel: true, mode: [:read_with_stderr],
+                                       on_exit_callback: callback) do |io|
+          io.set_encoding(Encoding::ASCII_8BIT)
+          conf = io.read
         end
-        unless pid.nil?
+        unless retval.nil?
           sleep 1
-
-          write_pipe.close
-
-          begin
-            while true
-              conf += read_pipe.read_nonblock(8192)
-              sleep 1
-            end
-          rescue EOFError => e
-          end
-
-          read_pipe.close
-
-          paid,status = Process.wait2(pid)
         end
         conf
       end
