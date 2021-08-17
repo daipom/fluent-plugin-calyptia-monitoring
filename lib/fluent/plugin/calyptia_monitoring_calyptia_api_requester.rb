@@ -37,12 +37,17 @@ module Fluent::Plugin
         ENV['HTTPS_PROXY'] || ENV['HTTP_PROXY'] || ENV['http_proxy'] || ENV['https_proxy']
       end
 
+      def create_go_semver(version)
+        version.gsub(/.(?<prever>(rc|alpha|beta|pre))/,
+                     '-\k<prever>')
+      end
+
       def agent_metadata(current_config)
         metadata = {
           "name" => Socket.gethostname,
           "type" => "fluentd",
           "rawConfig" => current_config,
-          "version" => Fluent::VERSION,
+          "version" => create_go_semver(Fluent::VERSION),
           "edition" => "community".freeze,
         }
         if system_config.workers.to_i > 1
