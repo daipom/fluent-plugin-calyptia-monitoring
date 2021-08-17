@@ -22,6 +22,7 @@ require 'fluent/system_config'
 require 'fluent/config/element'
 require 'fluent/plugin/metrics'
 require "fluent/plugin/input"
+require "serverengine"
 require_relative "calyptia_monitoring_ext"
 require_relative "calyptia_monitoring_calyptia_api_requester"
 
@@ -72,9 +73,6 @@ module Fluent
       def configure(conf)
         super
 
-        if !@cloud_monitoring.fluentd_conf_path.nil? && Fluent.windows?
-          raise Fluent::ConfigError, "retrieving from conf file is not supported on Windows. Use RPC version instead"
-        end
         config = conf.elements.select{|e| e.name == 'storage' }.first
         @storage_agent = storage_create(usage: 'calyptia_monitoring_agent', conf: config, default_type: DEFAULT_STORAGE_TYPE)
       end
@@ -104,14 +102,26 @@ module Fluent
             log.warn "config dumper unexpectedly exits without exit status", prog: prog
           end
         }
-        retval = child_process_execute(:exec_calyptia_config_dumper, File.join(__dir__, "calyptia_config_dumper.rb"), immediate: true,
+        spawn_command, arguments = if Fluent.windows?
+                          [::ServerEngine.ruby_bin_path, File.join(File.dirname(__FILE__), "calyptia_config_dumper.rb")]
+                        else
+                          [File.join(File.dirname(__FILE__), "calyptia_config_dumper.rb")]
+                        end
+
+        retval = child_process_execute(:exec_calyptia_config_dumper, spawn_command, arguments: arguments, immediate: true,
                                        env: {"FLUENT_CONFIG_PATH" => @cloud_monitoring.fluentd_conf_path}, parallel: true, mode: [:read_with_stderr],
                                        on_exit_callback: callback) do |io|
           io.set_encoding(Encoding::ASCII_8BIT)
           conf = io.read
         end
         unless retval.nil?
-          sleep 1
+          begin
+            Timeout.timeout(10) do
+              sleep 0.1 until !conf.empty?
+            end
+          rescue Timeout::Error
+            log.warn "cannot retrive configuration contents on #{@cloud_monitoring.fluentd_conf_path} within 10 seconds."
+          end
         end
         conf
       end
