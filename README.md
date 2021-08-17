@@ -108,6 +108,7 @@ Options:
 
 ## Copyright
 
-* Copyright(c) 2021- Hiroshi Hatake
+* Copyright(c) 2021- Calyptia Inc.
+* Hiroshi Hatake <hatake@calyptia.com>
 * License
   * Apache License, Version 2.0
