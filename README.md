@@ -118,9 +118,9 @@ And also retrieving configuration from actual file is also supported:
 </source>
 ```
 
-**Note:** We recommend to use RPC version due to some cirsumstances should differs from loaded configfiguration and saved Fluentd configurations.
-This is because RPC version can obtain from configuration contents on memory but from file version just read from current file contents.
-When users just update their Fluentd configuration and forgot to restart Fluentd instances, just differs from loaded and edited ones.
+**Note:** We recommend to use RPC version due to some circumstances should differ between a loaded configuration and a saved Fluentd configuration.
+This is because calling dumping config RPC feature can obtain from configuration contents which are loaded on memory. But retrieving configuration from the specified file is just read from the file contents and it cannot handle/retrieve loaded configurations on Fluentd.
+When users just update their Fluentd configurations and forgot to restart/reload their Fluentd instances, loaded configurations differ from just edited ones.
 
 ## Calyptia Monitoring API config generator
 
