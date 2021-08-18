@@ -84,6 +84,44 @@ And enabling RPC and configDump endpoint is required if sending Fluentd configur
 </source>
 ```
 
+And also retrieving configuration from actual file is also supported:
+
+```aconf
+<system>
+# If users want to use multi workers feature which corresponds to logical number of CPUs, please comment out this line.
+#  workers "#{require 'etc'; Etc.nprocessors}"
+  enable_input_metrics true
+  # This record size measuring settings might impact for performance.
+  # Please be careful for high loaded environment to turn on.
+  enable_size_metrics true
+  <metrics>
+    @type cmetrics
+  </metrics>
+</system>
+# And other configurations....
+
+## Fill YOUR_API_KEY with your Calyptia API KEY
+<source>
+  @type calyptia_monitoring
+  @id input_caplyptia_moniroting
+  <cloud_monitoring>
+    # endpoint http://development-environment-or-production.fqdn:5000
+    api_key YOUR_API_KEY
+    rate 30
+    pending_metrics_size 100 # Specify capacity for pending metrics
+    fluentd_conf_path /path/to/fluent.conf
+  </cloud_monitoring>
+  <storage>
+    @type local
+    path /path/to/agent/accessible/directories/agent_states
+  </storage>
+</source>
+```
+
+**Note:** We recommend to use RPC version due to some cirsumstances should differs from loaded configfiguration and saved Fluentd configurations.
+This is because RPC version can obtain from configuration contents on memory but from file version just read from current file contents.
+When users just update their Fluentd configuration and forgot to restart Fluentd instances, just differs from loaded and edited ones.
+
 ## Calyptia Monitoring API config generator
 
 Usage:
@@ -104,6 +142,7 @@ Options:
         --disable-get-dump           Disable RPC getDump procedure. getDump is enabled by default.
         --storage-agent-token-dir DIR
                                      Specify accesible storage token dir. (default: /path/to/accesible/dir)
+        --fluentd-conf-path PATH     Specify fluentd configuration file path. (default: nil)
 ```
 
 ## Copyright

@@ -4,8 +4,10 @@
   </metrics>
   enable_input_metrics <%= @enable_input_metrics %>
   enable_size_metrics <%= @enable_size_metrics %>
+<%- unless @disable_rpc -%>
   rpc_endpoint <%= @rpc_endpoint %>
   enable_get_dump <%= @enable_get_dump %>
+<%- end -%>
 <system>
 <source>
   @type calyptia_monitoring
@@ -15,6 +17,9 @@
     endpoint <%= @endpoint %>
 <%- end -%>
     api_key <%= @api_key %>
+<%- if @fluentd_conf_path -%>
+    fluentd_conf_path <%= @fluentd_conf_path %>
+<%- end -%>
   </cloud_monitoring>
   <storage>
     @type local
