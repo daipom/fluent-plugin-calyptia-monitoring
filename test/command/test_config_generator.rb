@@ -195,5 +195,36 @@ TEXT
 TEXT
       assert_equal(expected, dumped_config)
     end
+
+    test "with api_key and fluentd_config_path" do
+      storage_dir = Dir.tmpdir
+      conf_dir = Dir.tmpdir
+      conf_path = File.join(conf_dir, "fluent.conf")
+      dumped_config = capture_stdout do
+        CalyptiaConfigGenerator.new(["YOUR_API_KEY", "--storage_agent_token_dir", storage_dir, "--fluentd-conf-path", conf_path]).call
+      end
+      expected =<<TEXT
+<system>
+  <metrics>
+    @type cmetrics
+  </metrics>
+  enable_input_metrics true
+  enable_size_metrics false
+<system>
+<source>
+  @type calyptia_monitoring
+  @id input_caplyptia_monitoring
+  <cloud_monitoring>
+    api_key YOUR_API_KEY
+    fluentd_conf_path #{conf_path}
+  </cloud_monitoring>
+  <storage>
+    @type local
+    path #{storage_dir}/agent_state
+  </storage>
+</source>
+TEXT
+      assert_equal(expected, dumped_config)
+    end
   end
 end

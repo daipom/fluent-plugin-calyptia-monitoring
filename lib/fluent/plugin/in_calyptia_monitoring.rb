@@ -17,9 +17,9 @@ require 'net/http'
 require 'monitor'
 require 'time'
 require 'fluent/version'
-require 'fluent/config/element'
-require 'fluent/plugin/metrics'
+require 'fluent/env'
 require "fluent/plugin/input"
+require "serverengine"
 require_relative "calyptia_monitoring_ext"
 require_relative "calyptia_monitoring_calyptia_api_requester"
 
@@ -31,7 +31,7 @@ module Fluent
       class CreateAgentError < Fluent::ConfigError; end
       class UpdateAgentError < Fluent::ConfigError; end
 
-      helpers :timer, :storage
+      helpers :timer, :storage, :child_process
 
       RPC_CONFIG_DUMP_ENDPOINT = "/api/config.getDump".freeze
       DEFAULT_STORAGE_TYPE = 'local'
@@ -52,6 +52,8 @@ module Fluent
         config_param :rate, :time, default: 30
         desc 'Setup pending metrics capacity size'
         config_param :pending_metrics_size, :size, default: DEFAULT_PENDING_METRICS_SIZE
+        desc 'Specify Fluentd config file path for RPC not to be available case'
+        config_param :fluentd_conf_path, :string, default: nil
       end
 
       def multi_workers_ready?
@@ -67,6 +69,7 @@ module Fluent
 
       def configure(conf)
         super
+
         config = conf.elements.select{|e| e.name == 'storage' }.first
         @storage_agent = storage_create(usage: 'calyptia_monitoring_agent', conf: config, default_type: DEFAULT_STORAGE_TYPE)
       end
@@ -83,6 +86,43 @@ module Fluent
         confs.join
       end
 
+      def get_masked_conf_from_conf_file
+        return "" unless File.exist?(@cloud_monitoring.fluentd_conf_path) # check file existence.
+
+        conf = ""
+        callback = ->(status) {
+          if status && status.success?
+            #nop
+          elsif status
+            log.warn "config dumper exits with error code", prog: prog, status: status.exitstatus, signal: status.termsig
+          else
+            log.warn "config dumper unexpectedly exits without exit status", prog: prog
+          end
+        }
+        spawn_command, arguments = if Fluent.windows?
+                          [::ServerEngine.ruby_bin_path, File.join(File.dirname(__FILE__), "calyptia_config_dumper.rb")]
+                        else
+                          [File.join(File.dirname(__FILE__), "calyptia_config_dumper.rb")]
+                        end
+
+        retval = child_process_execute(:exec_calyptia_config_dumper, spawn_command, arguments: arguments, immediate: true,
+                                       env: {"FLUENT_CONFIG_PATH" => @cloud_monitoring.fluentd_conf_path}, parallel: true, mode: [:read_with_stderr],
+                                       on_exit_callback: callback) do |io|
+          io.set_encoding(Encoding::ASCII_8BIT)
+          conf = io.read
+        end
+        unless retval.nil?
+          begin
+            Timeout.timeout(10) do
+              sleep 0.1 until !conf.empty?
+            end
+          rescue Timeout::Error
+            log.warn "cannot retrive configuration contents on #{@cloud_monitoring.fluentd_conf_path} within 10 seconds."
+          end
+        end
+        conf
+      end
+
       def start
         super
 
@@ -97,9 +137,11 @@ module Fluent
                                                                     @cloud_monitoring.api_key,
                                                                     log,
                                                                     fluentd_worker_id)
-        if check_config_sending_usability
-          @current_config = get_current_config_from_rpc
-        end
+        @current_config = if !@cloud_monitoring.fluentd_conf_path.nil?
+                            get_masked_conf_from_conf_file
+                          elsif check_config_sending_usability
+                            get_current_config_from_rpc
+                          end
 
         if @cloud_monitoring.rate < 30
           log.warn "High frequency events ingestion is not supported. Set up 30s as ingestion interval"

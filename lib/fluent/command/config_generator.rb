@@ -33,6 +33,8 @@ class CalyptiaConfigGenerator
     @enable_get_dump = true
     @rpc_endpoint = "127.0.0.1:24444"
     @storage_agent_token_dir = default_storage_dir
+    @fluentd_conf_path = nil
+    @disable_rpc = false
 
     prepare_option_parser
   end
@@ -96,6 +98,10 @@ BANNER
     @parser.on("--storage-agent-token-dir DIR", "Specify accesible storage token dir. (default: #{default_storage_dir})") do |s|
       @storage_agent_token_dir = s
     end
+    @parser.on("--fluentd-conf-path PATH", "Specify fluentd configuration file path. (default: nil)") do |s|
+      @fluentd_conf_path = s
+      @disable_rpc = true
+    end
   end
 
   def usage(message = nil)
@@ -125,6 +131,8 @@ BANNER
       size_metrics: @enable_size_metrics,
       enable_get_dump: @enable_get_dump,
       storage_agent_token_dir: @storage_agent_token_dir,
+      fluentd_conf_path: @fluentd_conf_path,
+      disable_rpc: @disable_rpc,
     }
   rescue => e
     usage(e)
