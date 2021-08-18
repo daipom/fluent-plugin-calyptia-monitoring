@@ -18,9 +18,6 @@ require 'monitor'
 require 'time'
 require 'fluent/version'
 require 'fluent/env'
-require 'fluent/system_config'
-require 'fluent/config/element'
-require 'fluent/plugin/metrics'
 require "fluent/plugin/input"
 require "serverengine"
 require_relative "calyptia_monitoring_ext"
