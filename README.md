@@ -44,6 +44,7 @@ $ bundle
 |api_key|string (required)|The API KEY for Monitoring API HTTP request||
 |rate|time (optional)|Emit monitoring values interval. (minimum interval is 30 seconds.)|`30`|
 |pending_metrics_size|size (optional)|Setup pending metrics capacity size|`100`|
+|fluentd_conf_path|string (optional)|Specify Fluentd config file path for RPC not to be available case|`nil`|
 
 ### Example
 
