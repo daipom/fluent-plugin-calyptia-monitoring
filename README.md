@@ -40,7 +40,7 @@ $ bundle
 
 |parameter|type|description|default|
 |---|---|---|---|
-|endpoint|string (optional)|The endpoint for Monitoring API HTTP request, e.g. http://example.com/api|`TBD`|
+|endpoint|string (optional)|The endpoint for Monitoring API HTTP request, e.g. http://example.com/api|`"https://cloud-api.calyptia.com"`|
 |api_key|string (required)|The API KEY for Monitoring API HTTP request||
 |rate|time (optional)|Emit monitoring values interval. (minimum interval is 30 seconds.)|`30`|
 |pending_metrics_size|size (optional)|Setup pending metrics capacity size|`100`|
