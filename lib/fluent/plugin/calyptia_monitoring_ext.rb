@@ -27,8 +27,24 @@ module Fluent::Plugin
         @emit_records_metrics.cmetrics.to_msgpack
       },
       'retry_count' => ->(){
-        throw(:skip) unless instance_variable_defined?(:@buffer) && !@buffer.nil? && @buffer.is_a?(::Fluent::Plugin::Buffer)
+        throw(:skip) if @num_errors_metrics.get.nil?
         @num_errors_metrics.cmetrics.to_msgpack
+      },
+      'write_count' => ->(){
+        throw(:skip) if @write_count_metrics.get.nil?
+        @write_count_metrics.cmetrics.to_msgpack
+      },
+      'rollback_count' => ->(){
+        throw(:skip) if @rollback_count_metrics.get.nil?
+        @rollback_count_metrics.cmetrics.to_msgpack
+      },
+      'flush_time_count' => ->(){
+        throw(:skip) if @flush_time_count_metrics.get.nil?
+        @flush_time_count_metrics.cmetrics.to_msgpack
+      },
+      'slow_flush_count' => ->(){
+        throw(:skip) if @slow_flush_count_metrics.get.nil?
+        @slow_flush_count_metrics.cmetrics.to_msgpack
       },
     }
 

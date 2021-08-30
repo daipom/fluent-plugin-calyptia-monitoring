@@ -21,6 +21,7 @@ require 'fluent/env'
 require "fluent/plugin/input"
 require "serverengine"
 require_relative "calyptia_monitoring_ext"
+require_relative "calyptia_monitoring_buffer_ext"
 require_relative "calyptia_monitoring_calyptia_api_requester"
 
 module Fluent
@@ -133,6 +134,7 @@ module Fluent
                            end
         raise Fluent::ConfigError, "cmetrics plugin should be used to collect metrics on Calyptia Cloud" unless enabled_cmetrics
         @monitor_agent = Fluent::Plugin::CalyptiaMonitoringExtInput.new
+        @monitor_agent_buffer = Fluent::Plugin::CalyptiaMonitoringBufferExtInput.new
         @api_requester = Fluent::Plugin::CalyptiaAPI::Requester.new(@cloud_monitoring.endpoint,
                                                                     @cloud_monitoring.api_key,
                                                                     log,
@@ -259,6 +261,12 @@ module Fluent
         opts = {with_config: false, with_retry: false}
         buffer = ""
         @monitor_agent.plugins_info_all(opts).each { |record|
+          metrics = record["metrics"]
+          metrics.each_pair do |k, v|
+            buffer += v
+          end
+        }
+        @monitor_agent_buffer.plugins_info_all(opts).each {|record|
           metrics = record["metrics"]
           metrics.each_pair do |k, v|
             buffer += v
