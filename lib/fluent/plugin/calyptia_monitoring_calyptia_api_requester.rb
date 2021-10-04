@@ -108,7 +108,7 @@ module Fluent::Plugin
       # POST /v1/agents/:agent_id/metrics
       # Authorization: X-Agent-Token
       def add_metrics(metrics, agent_token, agent_id)
-        url = URI("#{@endpoint}/v1/agents/#{agent_id}/metrics")
+        url = URI("#{@endpoint}/v1/agent_metrics")
 
         https = if proxy = proxies
                   proxy_uri = URI.parse(proxy)
